@@ -1,0 +1,116 @@
+
+
+syntax = "proto3";
+
+import "google/protobuf/any.proto";
+
+option go_package = "desarso/photoToHtml/helpers/groq";
+
+package groq;
+
+
+// Tool represents a tool that the model can call.
+message Tool {
+  string name = 1; // The name of the tool
+  string type = 2; // The type of the tool (e.g., "function")
+  string description = 3; // A description of what the tool does
+  Function function = 4; // A nested struct for the function details
+}
+
+// Function represents the function that the tool can call.
+message Function {
+  string name = 1; // Name of the function
+  string arguments = 2;
+  Parameters parameters = 3; // Parameters of the function
+}
+
+// Parameters defines the parameters expected by the function.
+message Parameters {
+  string type = 1; // Type of the parameters (e.g., "object")
+  map<string, Field> properties = 2; // The properties of the parameters (a map of field names and types)
+  repeated string required = 3; // List of required fields
+}
+
+// Field defines the properties of a parameter.
+message Field {
+  string description = 1; // A description of the parameter
+  string type = 2; // The type of the parameter (e.g., "string", "number")
+}
+
+// Delta represents a change in content or tool call.
+message Delta {
+  string content = 1; // Content as a string, for text updates
+  repeated ToolCall tool_calls = 2; // List of tool calls in the delta.
+}
+
+// ToolCall represents a tool call with a function name and arguments.
+message ToolCall {
+  string id = 1; // ID for the tool call
+  string type = 2; // Type of the tool (e.g., "function")
+  Function function = 3; // Function being called with its name and parameters
+  int32 index = 4; // Index of the tool call
+}
+message Choice {
+  int32 index = 1;
+  Delta delta = 2; // To represent an expandable data type
+  google.protobuf.Any logprobs = 3;
+  string finish_reason = 4;
+  string content = 5;
+  Message message = 6;
+}
+
+message Usage {
+  float queue_time = 1;
+  int32 prompt_tokens = 2;
+  float prompt_time = 3;
+  int32 completion_tokens = 4;
+  float completion_time = 5;
+  int32 total_tokens = 6;
+  float total_time = 7;
+}
+
+message XGroq {
+  string id = 1;
+  Usage usage = 2;
+}
+
+message ResponseData {
+  string id = 1;
+  string object = 2;
+  int64 created = 3;
+  string model = 4;
+  string system_fingerprint = 5;
+  repeated Choice choices = 6;
+  XGroq x_groq = 7;
+}
+
+
+
+
+message Message {
+  string role = 1;
+  string content = 2;
+  repeated ToolCall tool_calls = 4;
+
+}
+
+message ImageUrl{
+  string url = 1;
+}
+
+// message Content{
+//   string type = 1;
+//   string text = 2;
+//   ImageUrl imageUrl = 3;
+// }
+
+message ChatRequest {
+  repeated Message messages = 1;
+  string apiKey = 2;
+  string model = 3;
+}
+
+service Chat {
+  rpc ChatStream (ChatRequest) returns (stream ResponseData);
+  rpc Chat(ChatRequest) returns (ResponseData);
+}
